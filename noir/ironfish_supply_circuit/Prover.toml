@@ -1,0 +1,6 @@
+senderInitialBalance = "10"
+senderFinalBalance = "5"
+fees = "1"
+receiverInitialBalance = "96"
+receiverFinalBalance = "100"
+transferAmount = "4"

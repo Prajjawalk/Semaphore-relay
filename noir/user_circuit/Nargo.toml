@@ -1,5 +1,5 @@
 [package]
-name = "prove_relay"
+name = "user_circuit"
 type = "bin"
 authors = [""]
 compiler_version = ">=0.22.0"

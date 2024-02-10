@@ -8,8 +8,8 @@ use dep::std;
 fn main(
     index: Field,
     hash_path: [[u8; 32]; 1],
-    spend_limit: pub Field,
-    transferAmount: Field,
+    spend_limit: str<64>,
+    transferAmount: str<64>,
     transactionHash: str<66>,
     root: pub [u8; 32]
 ) {
@@ -17,8 +17,12 @@ fn main(
     for i in transactionHash.as_bytes() {
         sha256_input = sha256_input.push_back(i);
     }
-    sha256_input = sha256_input.append(transferAmount.to_be_bytes(4));
-    sha256_input = sha256_input.append(spend_limit.to_be_bytes(4));
+    for i in transferAmount.as_bytes() {
+        sha256_input = sha256_input.push_back(i);
+    }
+    for i in spend_limit.as_bytes() {
+        sha256_input = sha256_input.push_back(i);
+    }
     let note_commitment = std::hash::sha256(sha256_input);
 
     let check_root = compute_merkle_root(note_commitment, index, hash_path);
@@ -107,10 +111,15 @@ fn test_valid_spend_limit() {
         commitment_2_input = commitment_2_input.push_back(i);
     }
 
-    let transferAmount = 30;
-    let spendingBucket = 60;
-    commitment_2_input = commitment_2_input.append(transferAmount.to_be_bytes(4));
-    commitment_2_input = commitment_2_input.append(spendingBucket.to_be_bytes(4));
+    let transferAmount = "624b60c58c9d8bfb6ff1886c2fd605d2adeb6ea4da576068201b6c6958ce93f4"; // sha256 30
+    let spendingBucket = "39fa9ec190eee7b6f4dff1100d6343e10918d044c75eac8f9e9a2596173f80c9"; //sha256 60
+
+    for i in transferAmount.as_bytes() {
+        commitment_2_input = commitment_2_input.push_back(i);
+    }
+    for i in spendingBucket.as_bytes() {
+        commitment_2_input = commitment_2_input.push_back(i);
+    }
     let commitment_2 = std::hash::sha256(commitment_2_input);
 
     let lvl1 = std::hash::sha256(commitment_0);
@@ -145,8 +154,8 @@ fn test_valid_spend_limit() {
     main(
         0,
         [lvl2],
-        60,
-        30,
+        spendingBucket,
+        transferAmount,
         "0x2c027c86fd5f26783f3bb1b1743515d9ff2d64433c3d627f9dffdef06e30cbc5",
         root
     );

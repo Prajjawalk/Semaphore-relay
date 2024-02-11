@@ -8,8 +8,8 @@ use dep::std;
 fn main(
     index: Field,
     hash_path: [[u8; 32]; 1],
-    spend_limit: str<64>,
-    transferAmount: str<64>,
+    spend_limit: pub Field,
+    transferAmount: Field,
     transactionHash: str<66>,
     root: pub [u8; 32]
 ) {
@@ -17,10 +17,25 @@ fn main(
     for i in transactionHash.as_bytes() {
         sha256_input = sha256_input.push_back(i);
     }
-    for i in transferAmount.as_bytes() {
+
+    let mut spend_limit_sha_inp: [u8] = [0; 0];
+    let sl: [u8] = spend_limit.to_be_bytes(8);
+    for i in 0..8 {
+        spend_limit_sha_inp = spend_limit_sha_inp.push_front(sl[i]);
+    }
+    let spend_limit_inp = std::hash::sha256(spend_limit_sha_inp);
+
+    let mut transfer_amount_sha_inp: [u8] = [0; 0];
+    let ta: [u8] = transferAmount.to_be_bytes(8);
+    for i in 0..8 {
+        transfer_amount_sha_inp = transfer_amount_sha_inp.push_front(ta[i]);
+    }
+    let transaction_amount_inp = std::hash::sha256(transfer_amount_sha_inp);
+
+    for i in transaction_amount_inp {
         sha256_input = sha256_input.push_back(i);
     }
-    for i in spend_limit.as_bytes() {
+    for i in spend_limit_inp {
         sha256_input = sha256_input.push_back(i);
     }
     let note_commitment = std::hash::sha256(sha256_input);
@@ -111,13 +126,27 @@ fn test_valid_spend_limit() {
         commitment_2_input = commitment_2_input.push_back(i);
     }
 
-    let transferAmount = "624b60c58c9d8bfb6ff1886c2fd605d2adeb6ea4da576068201b6c6958ce93f4"; // sha256 30
-    let spendingBucket = "39fa9ec190eee7b6f4dff1100d6343e10918d044c75eac8f9e9a2596173f80c9"; //sha256 60
+    let spend_limit = 60;
+    let transferAmount = 30;
 
-    for i in transferAmount.as_bytes() {
+    let mut spend_limit_sha_inp: [u8] = [0; 0];
+    let sl: [u8] = spend_limit.to_be_bytes(8);
+    for i in 0..8 {
+        spend_limit_sha_inp = spend_limit_sha_inp.push_front(sl[i]);
+    }
+    let spend_limit_inp = std::hash::sha256(spend_limit_sha_inp);
+
+    let mut transfer_amount_sha_inp: [u8] = [0; 0];
+    let ta: [u8] = transferAmount.to_be_bytes(8);
+    for i in 0..8 {
+        transfer_amount_sha_inp = transfer_amount_sha_inp.push_front(ta[i]);
+    }
+    let transaction_amount_inp = std::hash::sha256(transfer_amount_sha_inp);
+
+    for i in transaction_amount_inp {
         commitment_2_input = commitment_2_input.push_back(i);
     }
-    for i in spendingBucket.as_bytes() {
+    for i in spend_limit_inp {
         commitment_2_input = commitment_2_input.push_back(i);
     }
     let commitment_2 = std::hash::sha256(commitment_2_input);
@@ -154,7 +183,7 @@ fn test_valid_spend_limit() {
     main(
         0,
         [lvl2],
-        spendingBucket,
+        spend_limit,
         transferAmount,
         "0x2c027c86fd5f26783f3bb1b1743515d9ff2d64433c3d627f9dffdef06e30cbc5",
         root

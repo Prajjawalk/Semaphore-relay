@@ -1,4 +1,4 @@
-spendingBucketIRON = "4"
+spendLimitIRON = "60"
 fee = "1"
 amountToSpend = "3"
 asset = "0x4c58A838E6FccE71237FB07ab078B49474086496"

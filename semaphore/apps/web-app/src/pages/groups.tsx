@@ -1,4 +1,4 @@
-import { Identity } from "@semaphore-protocol/core"
+import { Identity } from "@semaphore-protocol/identity"
 import getNextConfig from "next/config"
 import { useRouter } from "next/router"
 import { useCallback, useContext, useEffect, useState } from "react"
@@ -17,14 +17,14 @@ export default function GroupsPage() {
     const [_identity, setIdentity] = useState<Identity>()
 
     useEffect(() => {
-        const privateKey = localStorage.getItem("identity")
+        const identityString = localStorage.getItem("identity")
 
-        if (!privateKey) {
+        if (!identityString) {
             router.push("/")
             return
         }
 
-        setIdentity(new Identity(privateKey))
+        setIdentity(new Identity(identityString))
     }, [])
 
     useEffect(() => {
@@ -67,7 +67,7 @@ export default function GroupsPage() {
         if (response.status === 200) {
             addUser(_identity.commitment.toString())
 
-            setLogs(`You have joined the Feedback group event 🎉 Share your feedback anonymously!`)
+            setLogs(`You joined the Feedback group event 🎉 Share your feedback anonymously!`)
         } else {
             setLogs("Some error occurred, please try again!")
         }
@@ -75,36 +75,29 @@ export default function GroupsPage() {
         setLoading(false)
     }, [_identity])
 
-    const userHasJoined = useCallback((identity: Identity) => _users.includes(identity.commitment), [_users])
+    const userHasJoined = useCallback((identity: Identity) => _users.includes(identity.commitment.toString()), [_users])
 
     return (
         <>
             <h2>Groups</h2>
 
             <p>
+                Semaphore{" "}
                 <a
-                    href="https://docs.semaphore.pse.dev/guides/groups"
+                    href="https://semaphore.pse.dev/docs/guides/groups"
                     target="_blank"
                     rel="noreferrer noopener nofollow"
                 >
-                    Semaphore groups
+                    groups
                 </a>{" "}
-                are{" "}
-                <a
-                    href="https://zkkit.pse.dev/classes/_zk_kit_imt.LeanIMT.html"
-                    target="_blank"
-                    rel="noreferrer noopener nofollow"
-                >
-                    Lean incremental Merkle trees
-                </a>{" "}
-                in which each leaf contains an identity commitment for a user. Groups can be abstracted to represent
-                events, polls, or organizations.
+                are binary incremental Merkle trees in which each leaf contains an identity commitment for a user.
+                Groups can be abstracted to represent events, polls, or organizations.
             </p>
 
             <div className="divider"></div>
 
             <div className="text-top">
-                <h3>Group users ({_users.length})</h3>
+                <h3>Feedback users ({_users.length})</h3>
                 <button className="button-link" onClick={refreshUsers}>
                     Refresh
                 </button>

@@ -52,11 +52,7 @@ node_modules/
 # Generate output
 dist
 build
-
-# Hardhat files
-artifacts
 cache
-typechain-types
 
 # Next.js
 .next/

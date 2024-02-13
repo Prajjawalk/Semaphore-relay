@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.4;
 
 import "@semaphore-protocol/contracts/interfaces/ISemaphore.sol";
 
@@ -8,11 +8,11 @@ contract Feedback {
 
     uint256 public groupId;
 
-    constructor(ISemaphore _semaphore, uint256 _groupId) {
-        semaphore = _semaphore;
+    constructor(address semaphoreAddress, uint256 _groupId) {
+        semaphore = ISemaphore(semaphoreAddress);
         groupId = _groupId;
 
-        semaphore.createGroup(groupId, address(this));
+        semaphore.createGroup(groupId, 20, address(this));
     }
 
     function joinGroup(uint256 identityCommitment) external {
@@ -20,21 +20,11 @@ contract Feedback {
     }
 
     function sendFeedback(
-        uint256 merkleTreeDepth,
-        uint256 merkleTreeRoot,
-        uint256 nullifier,
         uint256 feedback,
-        uint256[8] calldata points
+        uint256 merkleTreeRoot,
+        uint256 nullifierHash,
+        uint256[8] calldata proof
     ) external {
-        ISemaphore.SemaphoreProof memory proof = ISemaphore.SemaphoreProof(
-            merkleTreeDepth,
-            merkleTreeRoot,
-            nullifier,
-            feedback,
-            groupId,
-            points
-        );
-
-        semaphore.validateProof(groupId, proof);
+        semaphore.verifyProof(groupId, merkleTreeRoot, feedback, nullifierHash, groupId, proof);
     }
 }

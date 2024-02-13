@@ -14,5 +14,4 @@ fn main(
             std::wrapping_mul(amountToSpend as u64, assetPriceIRON as u64)
         )
     );
-    assert(asset != "0x0000000000000000000000000000000000000000");
 }

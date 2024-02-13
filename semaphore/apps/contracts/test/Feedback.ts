@@ -1,16 +1,19 @@
-import { Group, Identity, generateProof } from "@semaphore-protocol/core"
+import { Group } from "@semaphore-protocol/group"
+import { Identity } from "@semaphore-protocol/identity"
+import { generateProof } from "@semaphore-protocol/proof"
 import { expect } from "chai"
-import { encodeBytes32String } from "ethers"
+import { formatBytes32String } from "ethers/lib/utils"
 import { run } from "hardhat"
 // @ts-ignore: typechain folder will be generated after contracts compilation
-import { Feedback } from "../typechain-types"
+import { Feedback } from "../build/typechain"
+import { config } from "../package.json"
 
 describe("Feedback", () => {
     let feedbackContract: Feedback
     let semaphoreContract: string
 
     const groupId = "42"
-    const group = new Group()
+    const group = new Group(groupId)
     const users: Identity[] = []
 
     before(async () => {
@@ -18,7 +21,7 @@ describe("Feedback", () => {
             logs: false
         })
 
-        feedbackContract = await run("deploy", { logs: false, group: groupId, semaphore: await semaphore.getAddress() })
+        feedbackContract = await run("deploy", { logs: false, group: groupId, semaphore: semaphore.address })
         semaphoreContract = semaphore
 
         users.push(new Identity())
@@ -40,30 +43,27 @@ describe("Feedback", () => {
     })
 
     describe("# sendFeedback", () => {
-        it("Should allow users to send feedback anonymously", async () => {
-            const feedback = encodeBytes32String("Hello World")
+        const wasmFilePath = `${config.paths.build["snark-artifacts"]}/semaphore.wasm`
+        const zkeyFilePath = `${config.paths.build["snark-artifacts"]}/semaphore.zkey`
 
-            const proof = await generateProof(users[1], group, feedback, groupId)
+        it("Should allow users to send feedback anonymously", async () => {
+            const feedback = formatBytes32String("Hello World")
+
+            const fullProof = await generateProof(users[1], group, groupId, feedback, {
+                wasmFilePath,
+                zkeyFilePath
+            })
 
             const transaction = feedbackContract.sendFeedback(
-                proof.merkleTreeDepth,
-                proof.merkleTreeRoot,
-                proof.nullifier,
                 feedback,
-                proof.points
+                fullProof.merkleTreeRoot,
+                fullProof.nullifierHash,
+                fullProof.proof
             )
 
             await expect(transaction)
-                .to.emit(semaphoreContract, "ProofValidated")
-                .withArgs(
-                    groupId,
-                    proof.merkleTreeDepth,
-                    proof.merkleTreeRoot,
-                    proof.nullifier,
-                    proof.message,
-                    groupId,
-                    proof.points
-                )
+                .to.emit(semaphoreContract, "ProofVerified")
+                .withArgs(groupId, fullProof.merkleTreeRoot, fullProof.nullifierHash, groupId, fullProof.signal)
         })
     })
 })

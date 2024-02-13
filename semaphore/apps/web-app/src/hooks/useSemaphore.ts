@@ -1,12 +1,12 @@
 import { SemaphoreEthers } from "@semaphore-protocol/data"
-import { decodeBytes32String, toBeHex } from "ethers"
+import { BigNumber, utils } from "ethers"
 import getNextConfig from "next/config"
 import { useCallback, useState } from "react"
 import { SemaphoreContextType } from "../context/SemaphoreContext"
 
 const { publicRuntimeConfig: env } = getNextConfig()
 
-const ethereumNetwork = env.DEFAULT_NETWORK === "localhost" ? "http://127.0.0.1:8545" : env.DEFAULT_NETWORK
+const ethereumNetwork = env.DEFAULT_NETWORK === "scroll-sepolia" ? "https://sepolia-rpc.scroll.io" : env.DEFAULT_NETWORK
 
 export default function useSemaphore(): SemaphoreContextType {
     const [_users, setUsers] = useState<any[]>([])
@@ -14,12 +14,13 @@ export default function useSemaphore(): SemaphoreContextType {
 
     const refreshUsers = useCallback(async (): Promise<void> => {
         const semaphore = new SemaphoreEthers(ethereumNetwork, {
-            address: env.SEMAPHORE_CONTRACT_ADDRESS
+            address: env.SEMAPHORE_CONTRACT_ADDRESS,
+            startBlock: 2974700
         })
 
         const members = await semaphore.getGroupMembers(env.GROUP_ID)
 
-        setUsers(members.map((member) => member.toString()))
+        setUsers(members)
     }, [])
 
     const addUser = useCallback(
@@ -31,12 +32,37 @@ export default function useSemaphore(): SemaphoreContextType {
 
     const refreshFeedback = useCallback(async (): Promise<void> => {
         const semaphore = new SemaphoreEthers(ethereumNetwork, {
-            address: env.SEMAPHORE_CONTRACT_ADDRESS
+            address: env.SEMAPHORE_CONTRACT_ADDRESS,
+            startBlock: 2974700
         })
 
-        const proofs = await semaphore.getGroupValidatedProofs(env.GROUP_ID)
+        const proofs = await semaphore.getGroupVerifiedProofs("42")
+        const feedbackList = proofs.map(async ({ signal }: any) => {
+            let dataHex
+            try {
+                dataHex = utils.parseBytes32String(BigNumber.from(signal).toHexString())
+            } catch(e) {
+                dataHex = BigNumber.from(signal).toHexString().slice(2)
+            }
 
-        setFeedback(proofs.map(({ message }: any) => decodeBytes32String(toBeHex(message, 32))))
+            try {
+                const resp = await fetch(`http://localhost:3080/get-data?hex=${ dataHex}`, {
+                    method: "get",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*"
+                    }
+                })
+                const output = await resp.json()
+                if (output.message == null) {
+                    return dataHex
+                }
+                return output.message
+            } catch(e) {
+                return dataHex
+            }
+        })
+        setFeedback(await Promise.all(feedbackList))
     }, [])
 
     const addFeedback = useCallback(

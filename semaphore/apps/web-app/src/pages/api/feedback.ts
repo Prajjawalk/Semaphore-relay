@@ -1,4 +1,4 @@
-import { Contract, InfuraProvider, JsonRpcProvider, Wallet } from "ethers"
+import { Contract, providers, Wallet } from "ethers"
 import type { NextApiRequest, NextApiResponse } from "next"
 import Feedback from "../../../contract-artifacts/Feedback.json"
 
@@ -25,17 +25,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const contractAddress = process.env.FEEDBACK_CONTRACT_ADDRESS
 
     const provider =
-        ethereumNetwork === "localhost"
-            ? new JsonRpcProvider("https://sepolia-rpc.scroll.io")
-            : new InfuraProvider(ethereumNetwork, infuraApiKey)
+        ethereumNetwork === "scroll-sepolia"
+            ? new providers.JsonRpcProvider("https://sepolia-rpc.scroll.io")
+            : new providers.InfuraProvider(ethereumNetwork, infuraApiKey)
 
     const signer = new Wallet(ethereumPrivateKey, provider)
     const contract = new Contract(contractAddress, Feedback.abi, signer)
 
-    const { feedback, merkleTreeDepth, merkleTreeRoot, nullifier, points } = req.body
+    const { feedback, merkleTreeRoot, nullifierHash, proof } = req.body
+
+    console.log(req.body);
 
     try {
-        const transaction = await contract.sendFeedback(merkleTreeDepth, merkleTreeRoot, nullifier, feedback, points)
+        const transaction = await contract.sendFeedback(feedback, merkleTreeRoot, nullifierHash, proof)
 
         await transaction.wait()
 

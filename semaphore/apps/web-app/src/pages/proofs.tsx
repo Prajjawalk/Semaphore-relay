@@ -1,5 +1,7 @@
-import { Group, Identity, generateProof } from "@semaphore-protocol/core"
-import { encodeBytes32String } from "ethers"
+import { Group } from "@semaphore-protocol/group"
+import { Identity } from "@semaphore-protocol/identity"
+import { generateProof } from "@semaphore-protocol/proof"
+import { BigNumber, utils } from "ethers"
 import getNextConfig from "next/config"
 import { useRouter } from "next/router"
 import { useCallback, useContext, useEffect, useState } from "react"
@@ -8,7 +10,11 @@ import Stepper from "../components/Stepper"
 import LogsContext from "../context/LogsContext"
 import SemaphoreContext from "../context/SemaphoreContext"
 
+
 const { publicRuntimeConfig: env } = getNextConfig()
+
+// let counter = 0
+
 
 export default function ProofsPage() {
     const router = useRouter()
@@ -18,14 +24,14 @@ export default function ProofsPage() {
     const [_identity, setIdentity] = useState<Identity>()
 
     useEffect(() => {
-        const privateKey = localStorage.getItem("identity")
+        const identityString = localStorage.getItem("identity")
 
-        if (!privateKey) {
+        if (!identityString) {
             router.push("/")
             return
         }
 
-        setIdentity(new Identity(privateKey))
+        setIdentity(new Identity(identityString))
     }, [])
 
     useEffect(() => {
@@ -39,11 +45,6 @@ export default function ProofsPage() {
             return
         }
 
-        if (_users && _users.length < 2) {
-            alert("No anonymity in a group of one!")
-            return
-        }
-
         const feedback = prompt("Please enter your feedback:")
 
         if (feedback && _users) {
@@ -52,15 +53,36 @@ export default function ProofsPage() {
             setLogs(`Posting your anonymous feedback...`)
 
             try {
-                const group = new Group(_users)
 
-                const message = encodeBytes32String(feedback)
+                const group = new Group(env.GROUP_ID)
+                let signal
 
-                const { points, merkleTreeDepth, merkleTreeRoot, nullifier } = await generateProof(
+                try {
+                    const resp = await fetch(`${env.HELIA_NODE_URL  }/upload-data?message=${  feedback}`, {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Access-Control-Allow-Origin": "*"
+                        }
+                    })
+                    const output = await resp.json()
+                    signal = BigNumber.from(`0x${output.message}`).toString()
+                } catch(e) {
+                    console.log(e)
+                    signal = BigNumber.from(utils.formatBytes32String(feedback)).toString()
+                }
+
+
+
+
+
+                group.addMembers(_users)
+                // counter += 1;
+                const { proof, merkleTreeRoot, nullifierHash } = await generateProof(
                     _identity,
                     group,
-                    message,
-                    env.GROUP_ID
+                    env.GROUP_ID,
+                    signal
                 )
 
                 let response: any
@@ -73,7 +95,7 @@ export default function ProofsPage() {
                             abi: Feedback.abi,
                             address: env.FEEDBACK_CONTRACT_ADDRESS,
                             functionName: "sendFeedback",
-                            functionParameters: [merkleTreeDepth, merkleTreeRoot, nullifier, message, points]
+                            functionParameters: [signal, merkleTreeRoot, nullifierHash, proof]
                         })
                     })
                 } else {
@@ -81,11 +103,10 @@ export default function ProofsPage() {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            feedback: message,
-                            merkleTreeDepth,
+                            feedback: signal,
                             merkleTreeRoot,
-                            nullifier,
-                            points
+                            nullifierHash,
+                            proof
                         })
                     })
                 }
@@ -93,7 +114,7 @@ export default function ProofsPage() {
                 if (response.status === 200) {
                     addFeedback(feedback)
 
-                    setLogs(`Your feedback has been posted 🎉`)
+                    setLogs(`Your feedback was posted 🎉`)
                 } else {
                     setLogs("Some error occurred, please try again!")
                 }
@@ -114,20 +135,20 @@ export default function ProofsPage() {
             <p>
                 Semaphore members can anonymously{" "}
                 <a
-                    href="https://docs.semaphore.pse.dev/guides/proofs"
+                    href="https://semaphore.pse.dev/docs/guides/proofs"
                     target="_blank"
                     rel="noreferrer noopener nofollow"
                 >
                     prove
                 </a>{" "}
-                that they are part of a group and send their anonymous messages. Messages could be votes, leaks,
-                reviews, or feedback.
+                that they are part of a group and that they are generating their own signals. Signals could be anonymous
+                votes, leaks, reviews, or feedback.
             </p>
 
             <div className="divider"></div>
 
             <div className="text-top">
-                <h3>Feedback messages ({_feedback.length})</h3>
+                <h3>Feedback signals ({_feedback.length})</h3>
                 <button className="button-link" onClick={refreshFeedback}>
                     Refresh
                 </button>

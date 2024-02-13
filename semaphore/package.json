@@ -1,6 +1,6 @@
 {
   "name": "@semaphore-protocol/cli-template-monorepo-ethers",
-  "version": "4.0.0-alpha.6",
+  "version": "3.15.2",
   "description": "Semaphore Hardhat + Next.js + SemaphoreEthers template.",
   "license": "Unlicense",
   "files": [
@@ -22,13 +22,14 @@
     "lint": "eslint . --ext .js,.ts",
     "prettier": "prettier -c .",
     "prettier:write": "prettier -w .",
+    "copy:contract-artifacts": "ts-node scripts/copy-contract-artifacts.ts",
     "prepublish": "tar -czf files.tgz .gitignore .yarn .yarnrc.yml apps"
   },
   "workspaces": [
     "apps/*"
   ],
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/node": "^17.0.9",
     "@typescript-eslint/eslint-plugin": "^5.9.1",
     "@typescript-eslint/parser": "^5.9.1",
     "eslint": "^8.2.0",
@@ -39,5 +40,11 @@
     "prettier": "^2.5.1",
     "ts-node": "^10.8.1",
     "typescript": "^4.7.3"
+  },
+  "dependencies": {
+    "@helia/strings": "^3.0.0",
+    "helia": "^4.0.1",
+    "jsoning": "^0.13.23",
+    "uuid": "^9.0.1"
   }
 }

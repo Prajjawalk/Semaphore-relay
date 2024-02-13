@@ -9,6 +9,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "js-sha256": "^0.11.0"
+    "@helia/strings": "^3.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "helia": "^4.0.1",
+    "helio": "^0.0.9",
+    "js-sha256": "^0.11.0",
+    "jsoning": "^0.13.23",
+    "util": "^0.12.5"
   }
 }

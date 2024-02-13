@@ -1,27 +1,50 @@
-const { sha256 } = require('js-sha256');
 
-let commitment_0 = sha256.update(new Uint8Array([1, 10, 10]));
-let commitment_1 = sha256.update(new Uint8Array([2, 20, 30]));
-var commitment_2 = sha256.update('0x2c027c86fd5f26783f3bb1b1743515d9ff2d64433c3d627f9dffdef06e30cbc5');
-commitment_2.update(sha256.update(numToUint8Array(30)).digest());
-commitment_2.update(sha256.update(numToUint8Array(60)).digest());
+const express = require('express')
+const cors = require('cors')
+const {sha256} = require('js-sha256')
+const jsoning = require("jsoning")
 
-let lvl1 = sha256.update(commitment_0.hex());
-let lvl2 = sha256.update(commitment_1.hex());
-lvl2 = lvl2.update(lvl1.hex());
-let root = sha256.update(commitment_2.array())
-root = root.update(lvl2.array());
+let heliaStrings;
 
-function numToUint8Array(num) {
-  let arr = new Uint8Array(8);
+const app = express()
+const port = 3080
+app.use(cors())
+// const helia = createHelia();
 
-  for (let i = 0; i < 8; i++) {
-    arr[i] = num % 256;
-    num = Math.floor(num / 256);
+app.get('/upload-data', async (req, res) => {
+  // heliaStrings = strings(await createHelia());
+  try {
+    const db = new jsoning("./database.json");
+    const feedbacksha256 = sha256.update(String(req.query.message))
+    await db.set(feedbacksha256.toString(), req.query.message)
+    // const myImmutableAddress = await heliaStrings.add(req.query.message);
+    console.log("sending data", {"message": feedbacksha256.toString()})
+    res.send({"message": feedbacksha256.toString()});
+  } catch(e) {
+    console.log(e)
+    res.send(e)
   }
+  
+})
 
-  return arr;
-}
+app.get('/get-data', async (req, res) => {
+  // heliaStrings = strings(await createHelia());
+  try {
+    // const cid = CID.parse(req.query.ipfs);
+    // const message = await heliaStrings.get(cid);
+    const db = new jsoning("./database.json");
+    console.log(req.query.hex)
+    const message = await db.get(String(req.query.hex))
+    res.send({"message": message});
+  } catch(e) {
+    res.send(e)
+  }
+  
+})
 
-console.log(root.digest());
-console.log(lvl2.array())
+// const helia = promisify(new Promise(createHelia()));
+
+
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`)
+})

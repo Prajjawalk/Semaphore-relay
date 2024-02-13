@@ -1,4 +1,4 @@
-import { Identity } from "@semaphore-protocol/core"
+import { Identity } from "@semaphore-protocol/identity"
 import { useRouter } from "next/router"
 import { useCallback, useContext, useEffect, useState } from "react"
 import Stepper from "../components/Stepper"
@@ -10,14 +10,14 @@ export default function IdentitiesPage() {
     const [_identity, setIdentity] = useState<Identity>()
 
     useEffect(() => {
-        const privateKey = localStorage.getItem("identity")
+        const identityString = localStorage.getItem("identity")
 
-        if (privateKey) {
-            const identity = new Identity(privateKey)
+        if (identityString) {
+            const identity = new Identity(identityString)
 
             setIdentity(identity)
 
-            setLogs("Your Semaphore identity has been retrieved from the browser cache 👌🏽")
+            setLogs("Your Semaphore identity was retrieved from the browser cache 👌🏽")
         } else {
             setLogs("Create your Semaphore identity 👆🏽")
         }
@@ -28,9 +28,9 @@ export default function IdentitiesPage() {
 
         setIdentity(identity)
 
-        localStorage.setItem("identity", identity.privateKey.toString())
+        localStorage.setItem("identity", identity.toString())
 
-        setLogs("Your new Semaphore identity has just been created 🎉")
+        setLogs("Your new Semaphore identity was just created 🎉")
     }, [])
 
     return (
@@ -38,24 +38,21 @@ export default function IdentitiesPage() {
             <h2 className="font-size: 3rem;">Identities</h2>
 
             <p>
-                The identity of a user in the Semaphore protocol. A{" "}
+                Users interact with the protocol using a Semaphore{" "}
                 <a
-                    href="https://docs.semaphore.pse.dev/guides/identities"
+                    href="https://semaphore.pse.dev/docs/guides/identities"
                     target="_blank"
                     rel="noreferrer noopener nofollow"
                 >
-                    Semaphore identity
+                    identity
                 </a>{" "}
-                consists of an{" "}
-                <a
-                    href="https://github.com/privacy-scaling-explorations/zk-kit/tree/main/packages/eddsa-poseidon"
-                    target="_blank"
-                    rel="noreferrer noopener nofollow"
-                >
-                    EdDSA
-                </a>{" "}
-                public/private key pair and a commitment, used as the public identifier of the identity.
+                (similar to Ethereum accounts). It contains three values:
             </p>
+            <ol>
+                <li>Trapdoor: private, known only by user</li>
+                <li>Nullifier: private, known only by user</li>
+                <li>Commitment: public</li>
+            </ol>
 
             <div className="divider"></div>
 
@@ -71,7 +68,8 @@ export default function IdentitiesPage() {
             {_identity ? (
                 <div>
                     <div className="box">
-                        <p className="box-text">Private Key: {_identity.privateKey.toString()}</p>
+                        <p className="box-text">Trapdoor: {_identity.trapdoor.toString()}</p>
+                        <p className="box-text">Nullifier: {_identity.nullifier.toString()}</p>
                         <p className="box-text">Commitment: {_identity.commitment.toString()}</p>
                     </div>
                 </div>

@@ -1,10 +1,17 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+
+import {UserUltraVerifier} from './user_circuit_verifier.sol';
+import {RelayUltraVerifier} from './relay_circuit_verifier.sol';
 
 contract RelayVault is Ownable {
+
+    UserUltraVerifier userVerifier;
+    RelayUltraVerifier relayVerifier;
 
     uint256 public wIRONSupply;
     address public wIron;
@@ -22,24 +29,30 @@ contract RelayVault is Ownable {
     }
 
 
-    mapping(address => Asset) public assetAddressMap;
+    mapping(address => Asset) public assets;
 
     uint256 public nativeETHSupply;
 
-    constructor(address _wIron) {
+    constructor(address _wIron, UserUltraVerifier _userProofVerifier, RelayUltraVerifier _relayProofVerifier, uint256 _wIronPrice, uint8 _wIronPriceDecimals, uint8 _wIronDecimals)
+    Ownable() {
         wIron = _wIron;
+        userVerifier = _userProofVerifier;
+        relayVerifier = _relayProofVerifier;
+        ironPrice = _wIronPrice;
+        ironPriceDecimals = _wIronPriceDecimals;
+        ironDecimals = _wIronDecimals;
     }
 
     // Depositors deposit assets to get wIRON
     function deposit(address token, uint256 _amount) public payable {
-        assert(assetAddressMap[token].allowed == true);
+        assert(assets[token].allowed == true);
 
         // Transfer token from user to vault
         IERC20(token).transferFrom(msg.sender, address(this), _amount);
-        Asset storage asset = assetAddressMap[token];
+        Asset storage asset = assets[token];
         asset.supply += _amount;
 
-        uint256 wIronAmount = _convertPrice(token, wIron, _amount);
+        uint256 wIronAmount = _convertPrice(token, _amount);
         IERC20(wIron).transfer(msg.sender, wIronAmount);
 
         nativeETHSupply += msg.value;
@@ -47,22 +60,49 @@ contract RelayVault is Ownable {
     }
 
     // Relay function to relay transactions given proofs of spending limit as input
-    function relay() external onlyOwner {
+    function relay(
+        bytes calldata userProof,
+        bytes32 userMerkleRoot,
+        uint32 userSpendLimit,
+        bytes calldata relayProof,
+        uint32 amountToSpend,
+        bytes32 assetAddress, // zero address is native asset
+        address transferAsset, // zero address is native asset
+        address to
+    ) external onlyOwner {
 
+        bytes32 userSpendLimitBytes32;
+        assembly { mstore(add(userSpendLimitBytes32, 32), userSpendLimit) }
+        bytes32[] memory userPublicInputs = new bytes32[](2);
+        userPublicInputs[0] = userMerkleRoot;
+        userPublicInputs[1] = (userSpendLimitBytes32);
+        require(userVerifier.verify(userProof, userPublicInputs), "Invalid user proof");
+
+        bytes32 amountToSpendBytes32;
+        assembly { mstore(add(amountToSpendBytes32, 32), amountToSpend) }
+        bytes32[] memory relayPublicInputs = new bytes32[](2);
+        relayPublicInputs[0] = (amountToSpendBytes32);
+        relayPublicInputs[1] = assetAddress;
+        require(relayVerifier.verify(relayProof, relayPublicInputs), "Invalid relay proof");
+
+        require(userSpendLimit > amountToSpend);
+
+        require(IERC20(transferAsset).transfer(to, amountToSpend), "");
     }
 
-    function addSupportedAsset external onlyOwner (
+    function addSupportedAsset(
         address priceFeed,
         uint8 assetDecimals,
         uint8 priceFeedDecimals,
-        address tokenAddress) external payable {
+        address tokenAddress) external onlyOwner {
 
             require(priceFeed != address(0), "!INVALID FEED");
 
-            Asset storage asset = assetAddressMap[tokenAddress];
+            Asset storage asset = assets[tokenAddress];
             asset.allowed = true;
             asset.priceFeed = priceFeed;
             asset.assetDecimals = assetDecimals;
+            asset.priceFeedDecimals = priceFeedDecimals;
             asset.supply = 0;
     }
 
@@ -76,7 +116,6 @@ contract RelayVault is Ownable {
         address _fromAsset,
         uint256 _fromAmount
     ) internal view returns(uint256) {
-        require(_fromAsset != _toAsset, "!SAME_ASSET");
         require(assets[_fromAsset].priceFeed != address(0), "!INVALID(fromAsset)");
 
         if (_fromAmount == 0) {
@@ -88,7 +127,7 @@ contract RelayVault is Ownable {
 
         ( , oraclePrice, , updatedAt, ) = AggregatorV3Interface(assets[_fromAsset].priceFeed).latestRoundData();
         uint256 fromOraclePrice = uint256(oraclePrice);
-        require(maxPriceFeedAge == 0 || block.timestamp - updatedAt <= maxPriceFeedAge, "!PRICE_OUTDATED");
+        // require(maxPriceFeedAge == 0 || block.timestamp - updatedAt <= maxPriceFeedAge, "!PRICE_OUTDATED");
         // ( , oraclePrice, , updatedAt, ) = AggregatorV3Interface(assets[_toAsset].priceFeed).latestRoundData();
         uint256 toOraclePrice = uint256(ironPrice);
         // require(maxPriceFeedAge == 0 || block.timestamp - updatedAt <= maxPriceFeedAge, "!PRICE_OUTDATED");

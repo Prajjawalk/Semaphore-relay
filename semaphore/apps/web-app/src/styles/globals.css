@@ -33,7 +33,7 @@ p {
     display: flex;
     flex-direction: column;
     height: 100%;
-    max-width: 32rem;
+    max-width: 40rem;
 
     margin: auto;
     padding: 1rem;
@@ -143,9 +143,25 @@ a {
 }
 
 .box-text {
-    text-overflow: ellipsis;
-    overflow: hidden;
+    /* text-overflow: ellipsis; */
+    overflow: auto;
     white-space: nowrap;
+    margin: 0.5rem;
+}
+
+.proof-box {
+    padding: 0.8rem;
+    border-style: solid;
+    border-width: 1px;
+    border-color: var(--slate300);
+    border-radius: 4px;
+    height: 200px;
+}
+
+.proof-box-text {
+    /* text-overflow: ellipsis; */
+    word-wrap:break-word;
+    overflow-y: auto;
     margin: 0.5rem;
 }
 

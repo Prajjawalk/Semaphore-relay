@@ -129,7 +129,7 @@ export default function GroupsPage() {
             <Stepper
                 step={2}
                 onPrevClick={() => router.push("/")}
-                onNextClick={_identity && userHasJoined(_identity) ? () => router.push("/proofs") : undefined}
+                onNextClick={_identity && userHasJoined(_identity) ? () => router.push("/fund") : undefined}
             />
         </>
     )

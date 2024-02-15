@@ -62,32 +62,38 @@ contract RelayVault is Ownable {
     // Relay function to relay transactions given proofs of spending limit as input
     function relay(
         bytes calldata userProof,
-        bytes32 userMerkleRoot,
-        uint32 userSpendLimit,
+        bytes32[] calldata userPublicInputs,
         bytes calldata relayProof,
+        bytes32[] calldata relayPublicInputs,
         uint32 amountToSpend,
-        bytes32 assetAddress, // zero address is native asset
-        address transferAsset, // zero address is native asset
-        address to
+        address transferAsset,
+        address payable to
     ) external onlyOwner {
 
-        bytes32 userSpendLimitBytes32;
-        assembly { mstore(add(userSpendLimitBytes32, 32), userSpendLimit) }
-        bytes32[] memory userPublicInputs = new bytes32[](2);
-        userPublicInputs[0] = userMerkleRoot;
-        userPublicInputs[1] = (userSpendLimitBytes32);
         require(userVerifier.verify(userProof, userPublicInputs), "Invalid user proof");
 
-        bytes32 amountToSpendBytes32;
-        assembly { mstore(add(amountToSpendBytes32, 32), amountToSpend) }
-        bytes32[] memory relayPublicInputs = new bytes32[](2);
-        relayPublicInputs[0] = (amountToSpendBytes32);
-        relayPublicInputs[1] = assetAddress;
         require(relayVerifier.verify(relayProof, relayPublicInputs), "Invalid relay proof");
 
-        require(userSpendLimit > amountToSpend);
+        require(transferAsset != address(0));
 
-        require(IERC20(transferAsset).transfer(to, amountToSpend), "");
+        require(IERC20(transferAsset).transfer(to, amountToSpend), "Transfer failed");
+    }
+
+    // Relay function to relay transactions given proofs of spending limit as input
+    function relayEth(
+        bytes calldata userProof,
+        bytes32[] calldata userPublicInputs,
+        bytes calldata relayProof,
+        bytes32[] calldata relayPublicInputs,
+        uint32 amountToSpend,
+        address payable to
+    ) external onlyOwner {
+
+        require(userVerifier.verify(userProof, userPublicInputs), "Invalid user proof");
+
+        require(relayVerifier.verify(relayProof, relayPublicInputs), "Invalid relay proof");
+
+        to.transfer(amountToSpend);
     }
 
     function addSupportedAsset(

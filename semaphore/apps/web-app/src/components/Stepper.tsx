@@ -15,7 +15,7 @@ export default function Stepper({ step, onPrevClick, onNextClick }: StepperProps
                 <span></span>
             )}
 
-            <p>{step.toString()}/3</p>
+            <p>{step.toString()}/5</p>
 
             {onNextClick !== undefined ? (
                 <button className="button-stepper" disabled={!onNextClick} onClick={onNextClick || undefined}>

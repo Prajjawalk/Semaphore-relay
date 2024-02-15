@@ -32,12 +32,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const signer = new Wallet(ethereumPrivateKey, provider)
     const contract = new Contract(contractAddress, Feedback.abi, signer)
 
-    const { feedback, merkleTreeRoot, nullifierHash, proof } = req.body
+    const { feedback, merkleTreeRoot, nullifierHash, externalNullifier, proof } = req.body
 
     console.log(req.body);
 
     try {
-        const transaction = await contract.sendFeedback(feedback, merkleTreeRoot, nullifierHash, proof)
+        const transaction = await contract.sendFeedback(feedback, merkleTreeRoot, nullifierHash, externalNullifier, proof)
 
         await transaction.wait()
 

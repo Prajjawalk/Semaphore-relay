@@ -36,7 +36,7 @@ export default function useSemaphore(): SemaphoreContextType {
             startBlock: 2974700
         })
 
-        const proofs = await semaphore.getGroupVerifiedProofs("42")
+        const proofs = await semaphore.getGroupVerifiedProofs(env.GROUP_ID)
         const feedbackList = proofs.map(async ({ signal }: any) => {
             let dataHex
             try {
@@ -62,7 +62,17 @@ export default function useSemaphore(): SemaphoreContextType {
                 return dataHex
             }
         })
-        setFeedback(await Promise.all(feedbackList))
+
+        const feedbackInputs = await Promise.all(feedbackList)
+        const botRequests = feedbackInputs.filter((i) => i.slice(0, 4) === "/bot")
+        const botRequestFulfilled = feedbackInputs.filter((i) => i.slice(0, 5) === "/sent")
+        const unfulfilledBotRequests = botRequests.slice(botRequestFulfilled.length)
+        botRequests.map((i) => {
+            const infoArr = i.split(" ")
+            infoArr.map((i: any) => console.log(i))
+        })
+        console.log(unfulfilledBotRequests)
+        setFeedback(feedbackInputs)
     }, [])
 
     const addFeedback = useCallback(

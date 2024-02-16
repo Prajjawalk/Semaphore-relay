@@ -3,10 +3,10 @@ import type { AppProps } from "next/app"
 import Head from "next/head"
 import { useRouter } from "next/router"
 import { useEffect, useState } from "react"
+import { Inter } from "@next/font/google"
 import LogsContext from "../context/LogsContext"
 import SemaphoreContext from "../context/SemaphoreContext"
 import useSemaphore from "../hooks/useSemaphore"
-import { Inter } from "@next/font/google"
 
 const inter = Inter({ subsets: ["latin"] })
 

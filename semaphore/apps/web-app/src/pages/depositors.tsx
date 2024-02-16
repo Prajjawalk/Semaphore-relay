@@ -2,11 +2,11 @@ import { Identity } from "@semaphore-protocol/identity"
 import getNextConfig from "next/config"
 import { useRouter } from "next/router"
 import { useCallback, useContext, useEffect, useState } from "react"
+import {ethers} from "ethers"
 import Feedback from "../../contract-artifacts/Feedback.json"
 import Stepper from "../components/Stepper"
 import LogsContext from "../context/LogsContext"
 import SemaphoreContext from "../context/SemaphoreContext"
-import {ethers} from "ethers"
 
 const { publicRuntimeConfig: env } = getNextConfig()
 

@@ -3,9 +3,8 @@ const express = require('express')
 const cors = require('cors')
 const {sha256} = require('js-sha256')
 const jsoning = require("jsoning")
-
+require('dotenv').config()
 let heliaStrings;
-
 const app = express()
 const port = 3080
 app.use(cors())

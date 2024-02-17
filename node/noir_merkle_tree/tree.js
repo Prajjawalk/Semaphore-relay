@@ -144,11 +144,13 @@ async function broadcast() {
   return relayVaultTransactionResponse;
 }
 
-broadcast().then((relayVaultTransactionResponse) => {
-  console.log('🎉 The hash of your transaction is:', relayVaultTransactionResponse.hash);
-})
+export default broadcast;
+
+// broadcast().then((relayVaultTransactionResponse) => {
+//   console.log('🎉 The hash of your transaction is:', relayVaultTransactionResponse.hash);
+// })
 
 
-console.log(root.toString());
-console.log(root.digest());
-console.log(lvl2.array())
+// console.log(root.toString());
+// console.log(root.digest());
+// console.log(lvl2.array())

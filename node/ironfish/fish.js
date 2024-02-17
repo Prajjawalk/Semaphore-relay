@@ -5,14 +5,14 @@ const async = require('async');
 const { sha256 } = require('js-sha256');
 const usercircuit = require('../../noir/user_circuit/target/user_circuit.json')
 
-async function main() {
+async function createRawTransaction(from, to, amount) {
   const sdk = await IronfishSdk.init({ dataDir: '~/.ironfish' });
   const client = await sdk.connectRpc();
   
 
-  const from = 'acc2';
-  const to = '01ad7aa5a5e8a1e49ed5764179f6950fed680dae74c5fc070dec2e391cc02e95';
-  const amount = '10';
+  // const from = 'acc2';
+  // const to = '01ad7aa5a5e8a1e49ed5764179f6950fed680dae74c5fc070dec2e391cc02e95';
+  // const amount = '10';
   const fee = 1;
   const memo = ""
   const expiration = 173913;
@@ -35,16 +35,17 @@ async function main() {
 
   const response = await client.wallet.createTransaction(options);
   console.log(response);
+  return response;
 }
 
-async function transactionView() {
+async function transactionView(account) {
   // const config = JSON.parse((await fsAsync.readFile('.ironfish.config.json')).toString());
   const sdk = await IronfishSdk.init({dataDir: '~/.ironfish'});
   const userBackend = new BarretenbergBackend(usercircuit);
   const user = new Noir(usercircuit, userBackend);
 
   const client = await sdk.connectRpc();
-  const account = 'acc2';
+  const account = account;
   const confirmations = 1;
 
   const options = {
@@ -101,6 +102,7 @@ async function transactionView() {
 
   const userProof = await user.generateFinalProof(userInput);
   console.log(userProof)
+  return userProof;
 }
 
 function numToUint8Array(num) {
@@ -115,4 +117,8 @@ function numToUint8Array(num) {
 }
 
 // main()
-async.series([transactionView]);
+// async.series([transactionView]);
+export {
+  createRawTransaction,
+  transactionView,
+}

@@ -3,6 +3,7 @@ const express = require('express')
 const cors = require('cors')
 const {sha256} = require('js-sha256')
 const jsoning = require("jsoning")
+const {createRawTransaction, transactionView} = require('./ironfish/fish')
 require('dotenv').config()
 let heliaStrings;
 const app = express()
@@ -39,6 +40,15 @@ app.get('/get-data', async (req, res) => {
     res.send(e)
   }
   
+})
+
+app.post('/getRawTransaction', async (req, res) => {
+  try {
+    const tx = await createRawTransaction(req.body.from, req.body.to, req.body.amount);
+    res.send(tx);
+  } catch(e) {
+    throw new Error(e);
+  }
 })
 
 // const helia = promisify(new Promise(createHelia()));

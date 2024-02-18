@@ -38,7 +38,7 @@ async function createRawTransaction(from, to, amount) {
   return response;
 }
 
-async function transactionView(account) {
+async function transactionProofs(account) {
   // const config = JSON.parse((await fsAsync.readFile('.ironfish.config.json')).toString());
   const sdk = await IronfishSdk.init({dataDir: '~/.ironfish'});
   const userBackend = new BarretenbergBackend(usercircuit);
@@ -120,5 +120,5 @@ function numToUint8Array(num) {
 // async.series([transactionView]);
 export {
   createRawTransaction,
-  transactionView,
+  transactionProofs,
 }

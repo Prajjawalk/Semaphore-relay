@@ -3,7 +3,8 @@ const express = require('express')
 const cors = require('cors')
 const {sha256} = require('js-sha256')
 const jsoning = require("jsoning")
-const {createRawTransaction, transactionView} = require('./ironfish/fish')
+const {createRawTransaction, transactionProofs} = require('./ironfish/fish')
+const {generateRelayCircuit, generateRelayProof} = require('./sindri/sindri')
 require('dotenv').config()
 let heliaStrings;
 const app = express()
@@ -46,6 +47,33 @@ app.post('/getRawTransaction', async (req, res) => {
   try {
     const tx = await createRawTransaction(req.body.from, req.body.to, req.body.amount);
     res.send(tx);
+  } catch(e) {
+    throw new Error(e);
+  }
+})
+
+app.post('/getUserTransactionProofs', async (req, res) => {
+  try {
+    const proofs = await transactionProofs(req.body.account);
+    res.send({"userTxProofs": proofs});
+  } catch(e) {
+    throw new Error(e)
+  }
+})
+
+app.post('/generateRelayCircuit', async (req, res) => {
+  try {
+    const circuitDetails = await generateRelayCircuit();
+    res.send({"relay_circuit_details": circuitDetails}); 
+  } catch(e) {
+    throw new Error(e);
+  }
+})
+
+app.post('/generateRelayProofs', async (req, res) => {
+  try {
+    const relayProofs = await generateRelayProof(req.body.proofInputs);
+    res.send({"relay_circuit_proofs": relayProofs});
   } catch(e) {
     throw new Error(e);
   }

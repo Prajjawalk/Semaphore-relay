@@ -13,17 +13,18 @@ const JSON_CONTRACT = require("./UserUltraVerifier.json").abi
 const RELAY_JSON_CONTRACT = require("./RelayUltraVerifier.json").abi
 const RELAY_VAULT_JSON_CONTRACT = require("./RelayVault.json").abi
 
-let commitment_0 = sha256.update(new Uint8Array([1, 10, 10]));
-let commitment_1 = sha256.update(new Uint8Array([2, 20, 30]));
-var commitment_2 = sha256.update('0x2c027c86fd5f26783f3bb1b1743515d9ff2d64433c3d627f9dffdef06e30cbc5');
-commitment_2.update(sha256.update(numToUint8Array(30)).digest());
-commitment_2.update(sha256.update(numToUint8Array(60)).digest());
+// Process of merkle tree generation
+// let commitment_0 = sha256.update(new Uint8Array([1, 10, 10]));
+// let commitment_1 = sha256.update(new Uint8Array([2, 20, 30]));
+// var commitment_2 = sha256.update('0x2c027c86fd5f26783f3bb1b1743515d9ff2d64433c3d627f9dffdef06e30cbc5');
+// commitment_2.update(sha256.update(numToUint8Array(30)).digest());
+// commitment_2.update(sha256.update(numToUint8Array(60)).digest());
 
-let lvl1 = sha256.update(commitment_0.hex());
-let lvl2 = sha256.update(commitment_1.hex());
-lvl2 = lvl2.update(lvl1.hex());
-let root = sha256.update(commitment_2.array())
-root = root.update(lvl2.array());
+// let lvl1 = sha256.update(commitment_0.hex());
+// let lvl2 = sha256.update(commitment_1.hex());
+// lvl2 = lvl2.update(lvl1.hex());
+// let root = sha256.update(commitment_2.array())
+// root = root.update(lvl2.array());
 
 function numToUint8Array(num) {
   let arr = new Uint8Array(8);
@@ -38,28 +39,28 @@ function numToUint8Array(num) {
 
 
 
-async function broadcast() {
+async function broadcast(userTxIndex, hashPath, spendLimit, transferAmount, txHash, userRoot, relayFee, amountToSpend, assetAddress, nativeAssetPrice, transferAssetPrice) {
   const userBackend = new BarretenbergBackend(usercircuit);
   const user = new Noir(usercircuit, userBackend);
   const relayBackend = new BarretenbergBackend(relaycircuit);
   const relay = new Noir(relaycircuit, relayBackend);
 
   const userInput = {
-    index: 0,
-    hash_path: [lvl2.array()],
-    spend_limit: 60,
-    transferAmount: 30,
-    transactionHash: "0x2c027c86fd5f26783f3bb1b1743515d9ff2d64433c3d627f9dffdef06e30cbc5",
-    root: root.digest()
+    index: userTxIndex,
+    hash_path: [hashPath],
+    spend_limit: spendLimit,
+    transferAmount: transferAmount,
+    transactionHash: txHash,
+    root: userRoot
   }
 
   const relayInput = {
-    spendLimitIRON: 60,
-    fee: 1,
-    amountToSpend: 3,
-    asset: "0x4c58A838E6FccE71237FB07ab078B49474086496",
-    feePriceIRON: 1,
-    assetPriceIRON: 1
+    spendLimitIRON: spendLimit,
+    fee: relayFee,
+    amountToSpend: amountToSpend,
+    asset: assetAddress,
+    feePriceIRON: nativeAssetPrice,
+    assetPriceIRON: transferAssetPrice
   }
 
   const loadContract = async (data) => {
@@ -125,6 +126,7 @@ async function broadcast() {
   // const relaySignedTransaction = await signer.populateTransaction(relayTransaction);
   // const relayTransactionResponse = await signer.sendTransaction(relaySignedTransaction);
 
+  // The relay contract is deployed on scroll at - https://sepolia.scrollscan.dev/address/0x7a34fa83b82c57b672e369fc1ee55acba189b75f
   const relayVaultContract = await loadRelayVaultContract(RELAY_VAULT_JSON_CONTRACT);
 
   const relayVaultTransaction = {
@@ -144,7 +146,7 @@ async function broadcast() {
   return relayVaultTransactionResponse;
 }
 
-export default broadcast;
+export default {broadcast, numToUint8Array};
 
 // broadcast().then((relayVaultTransactionResponse) => {
 //   console.log('🎉 The hash of your transaction is:', relayVaultTransactionResponse.hash);
